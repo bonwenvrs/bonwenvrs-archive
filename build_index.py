@@ -1,38 +1,70 @@
-#!/usr/bin/env python3
-"""Generate stories.json from folders and PDF files in stories/."""
-from pathlib import Path
 import json
+from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent
-STORIES_DIR = ROOT / "stories"
-OUTPUT = ROOT / "stories.json"
+BASE_DIR = Path(__file__).resolve().parent
+STORIES_DIR = BASE_DIR / "stories"
+OUTPUT_JSON = BASE_DIR / "stories.json"
 
-stories = []
-if STORIES_DIR.exists():
-    for folder in sorted((p for p in STORIES_DIR.iterdir() if p.is_dir()), key=lambda p: p.name.casefold()):
-        pdfs = sorted(
-            (p for p in folder.rglob("*") if p.is_file() and p.suffix.lower() == ".pdf"),
-            key=lambda p: p.name.casefold()
-        )
-        if not pdfs:
+
+def read_story_intro(story_folder: Path) -> str:
+    intro_file = story_folder / "intro.txt"
+    if not intro_file.is_file():
+        return ""
+    raw_text = intro_file.read_text(encoding="utf-8", errors="replace")
+    return raw_text.strip()
+
+
+def format_title_from_slug(slug: str) -> str:
+    return slug.replace("-", " ").replace("_", " ").strip().title()
+
+
+def build_stories_index() -> list[dict]:
+    if not STORIES_DIR.exists():
+        STORIES_DIR.mkdir(parents=True, exist_ok=True)
+
+    entries: list[dict] = []
+
+    for folder in sorted(STORIES_DIR.iterdir(), key=lambda p: p.name.lower()):
+        if not folder.is_dir():
             continue
-        intro_file = folder / "intro.txt"
-        description = intro_file.read_text(encoding="utf-8").strip() if intro_file.is_file() else ""
+        if folder.name.startswith(".") or folder.name.upper().startswith("ADD-YOUR-STORY"):
+            continue
 
-        stories.append({
-            "title": folder.name,
-            "description": description,
-            "pdfs": [
-                {
-                    "name": pdf.name,
-                    "path": pdf.relative_to(ROOT).as_posix()
-                }
-                for pdf in pdfs
-            ]
-        })
+        slug = folder.name
+        intro_text = read_story_intro(folder)
 
-OUTPUT.write_text(
-    json.dumps({"stories": stories}, ensure_ascii=False, indent=2) + "\n",
-    encoding="utf-8"
-)
-print(f"Generated {OUTPUT.name} with {len(stories)} story folder(s).")
+        # Collect text/chapter files inside the story folder if present
+        chapters = sorted(
+            [
+                f.name
+                for f in folder.iterdir()
+                if f.is_file() and f.name.lower() != "intro.txt" and not f.name.startswith(".")
+            ],
+            key=lambda name: name.lower(),
+        )
+
+        entries.append(
+            {
+                "slug": slug,
+                "title": format_title_from_slug(slug),
+                "intro": intro_text,
+                "has_intro": bool(intro_text),
+                "path": f"stories/{slug}",
+                "files": chapters,
+            }
+        )
+
+    return entries
+
+
+def main() -> None:
+    index_data = build_stories_index()
+    OUTPUT_JSON.write_text(
+        json.dumps(index_data, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    print(f"Generated {OUTPUT_JSON.name} with {len(index_data)} story entries.")
+
+
+if __name__ == "__main__":
+    main()
