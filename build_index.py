@@ -7,11 +7,10 @@ OUTPUT_JSON = BASE_DIR / "stories.json"
 
 
 def read_story_intro(story_folder: Path) -> str:
-    intro_file = story_folder / "intro.txt"
-    if not intro_file.is_file():
-        return ""
-    raw_text = intro_file.read_text(encoding="utf-8", errors="replace")
-    return raw_text.strip()
+    for candidate in story_folder.iterdir():
+        if candidate.is_file() and candidate.name.lower() == "intro.txt":
+            return candidate.read_text(encoding="utf-8", errors="replace").strip()
+    return ""
 
 
 def format_title_from_slug(slug: str) -> str:
@@ -33,12 +32,13 @@ def build_stories_index() -> list[dict]:
         slug = folder.name
         intro_text = read_story_intro(folder)
 
-        # Collect text/chapter files inside the story folder if present
         chapters = sorted(
             [
                 f.name
                 for f in folder.iterdir()
-                if f.is_file() and f.name.lower() != "intro.txt" and not f.name.startswith(".")
+                if f.is_file()
+                and f.name.lower() != "intro.txt"
+                and not f.name.startswith(".")
             ],
             key=lambda name: name.lower(),
         )
