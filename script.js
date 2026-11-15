@@ -1,104 +1,72 @@
-const storyList = document.getElementById("story-list");
-const storyCount = document.getElementById("story-count");
-const searchInput = document.getElementById("search");
-const emptyState = document.getElementById("empty-state");
-const reader = document.getElementById("reader");
-const readerTitle = document.getElementById("reader-title");
-const pdfList = document.getElementById("pdf-list");
-const viewerWrap = document.getElementById("pdf-viewer-wrap");
-const viewer = document.getElementById("pdf-viewer");
-const viewerFilename = document.getElementById("viewer-filename");
-const openPdf = document.getElementById("open-pdf");
+document.addEventListener("DOMContentLoaded", () => {
+  const container =
+    document.querySelector("#stories-container") ||
+    document.querySelector("[data-stories-list]") ||
+    document.querySelector("main");
 
-let stories = [];
+  if (!container) return;
 
-function safeAssetPath(path) {
-  return path.split("/").map(part => encodeURIComponent(part)).join("/");
-}
-
-function showPdf(pdf) {
-  const url = safeAssetPath(pdf.path);
-  viewer.src = url;
-  openPdf.href = url;
-  viewerFilename.textContent = pdf.name;
-  viewerWrap.classList.remove("hidden");
-}
-
-function openStory(story) {
-  readerTitle.textContent = story.title;
-  pdfList.replaceChildren();
-  viewer.src = "about:blank";
-  viewerWrap.classList.add("hidden");
-
-  story.pdfs.forEach((pdf, index) => {
-    const item = document.createElement("div");
-    item.className = "pdf-item";
-    const icon = document.createElement("span");
-    icon.className = "pdf-icon";
-    icon.textContent = "PDF";
-    const choose = document.createElement("button");
-    choose.type = "button";
-    choose.textContent = pdf.name;
-    choose.addEventListener("click", () => showPdf(pdf));
-    const download = document.createElement("a");
-    download.className = "download-link";
-    download.href = safeAssetPath(pdf.path);
-    download.download = pdf.name;
-    download.textContent = "Download";
-    item.append(icon, choose, download);
-    pdfList.append(item);
-    if (index === 0) showPdf(pdf);
-  });
-
-  reader.classList.remove("hidden");
-  reader.scrollIntoView({ behavior: "smooth", block: "start" });
-}
-
-function renderStories(query = "") {
-  storyList.replaceChildren();
-  const normalized = query.trim().toLocaleLowerCase();
-  const visible = stories.filter(story => story.title.toLocaleLowerCase().includes(normalized));
-  storyCount.textContent = `(${visible.length})`;
-  emptyState.classList.toggle("hidden", visible.length !== 0);
-
-  visible.forEach(story => {
-    const card = document.createElement("button");
-    card.type = "button";
+  function createStoryCard(story) {
+    const card = document.createElement("article");
     card.className = "story-card";
-    const title = document.createElement("h3");
-    title.textContent = story.title;
-    const meta = document.createElement("div");
-    meta.className = "story-meta";
-    const count = document.createElement("span");
-    count.textContent = `${story.pdfs.length} PDF${story.pdfs.length === 1 ? "" : "s"}`;
-    const arrow = document.createElement("span");
-    arrow.className = "story-arrow";
-    arrow.textContent = "↗";
-    meta.append(count, arrow);
-    card.append(title, meta);
-    card.addEventListener("click", () => openStory(story));
-    storyList.append(card);
-  });
-}
+    card.dataset.slug = story.slug || "";
 
-document.getElementById("close-reader").addEventListener("click", () => {
-  reader.classList.add("hidden");
-  viewer.src = "about:blank";
-});
-searchInput.addEventListener("input", event => renderStories(event.target.value));
+    const titleEl = document.createElement("h2");
+    titleEl.className = "story-title";
+    titleEl.textContent = story.title || story.slug || "Untitled Story";
+    card.appendChild(titleEl);
 
-fetch("./stories.json", { cache: "no-store" })
-  .then(response => {
-    if (!response.ok) throw new Error("The story index could not be loaded.");
-    return response.json();
-  })
-  .then(data => {
-    stories = Array.isArray(data.stories) ? data.stories : [];
-    renderStories();
-    if (stories.length === 0) {
-      storyList.innerHTML = '<p class="status-message">No stories yet. Add a folder containing PDF files inside <code>stories/</code>, then push your changes to GitHub.</p>';
+    // Automatically flash intro.txt content as the story description when present
+    if (story.intro && story.intro.trim().length > 0) {
+      const introEl = document.createElement("p");
+      introEl.className = "story-intro story-description";
+      introEl.textContent = story.intro.trim();
+      card.appendChild(introEl);
+
+      requestAnimationFrame(() => {
+        introEl.classList.add("is-flashed");
+      });
     }
-  })
-  .catch(() => {
-    storyList.innerHTML = '<p class="status-message">The archive index is not available yet. Check that the GitHub Actions workflow has completed successfully.</p>';
-  });
+
+    if (story.path) {
+      const linkEl = document.createElement("a");
+      linkEl.className = "story-link";
+      linkEl.href = `#story/${encodeURIComponent(story.slug)}`;
+      linkEl.dataset.storyPath = story.path;
+      linkEl.textContent = "Open Story";
+      card.appendChild(linkEl);
+    }
+
+    return card;
+  }
+
+  async function loadStories() {
+    try {
+      const response = await fetch("./stories.json", { cache: "no-store" });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const stories = await response.json();
+      container.innerHTML = "";
+
+      if (!Array.isArray(stories) || stories.length === 0) {
+        const emptyMsg = document.createElement("p");
+        emptyMsg.className = "story-empty";
+        emptyMsg.textContent = "No stories found in the archive yet.";
+        container.appendChild(emptyMsg);
+        return;
+      }
+
+      const fragment = document.createDocumentFragment();
+      stories.forEach((story) => {
+        fragment.appendChild(createStoryCard(story));
+      });
+      container.appendChild(fragment);
+    } catch (err) {
+      console.error("Failed to load stories.json:", err);
+    }
+  }
+
+  loadStories();
+});
