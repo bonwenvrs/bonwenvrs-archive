@@ -16,8 +16,12 @@ if STORIES_DIR.exists():
         )
         if not pdfs:
             continue
+        intro_file = folder / "intro.txt"
+        description = intro_file.read_text(encoding="utf-8").strip() if intro_file.is_file() else ""
+
         stories.append({
             "title": folder.name,
+            "description": description,
             "pdfs": [
                 {
                     "name": pdf.name,
