@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f6f2">
+  <meta name="description" content="Bonwenvrs' Archive — a personal collection of alternate universes and stories.">
+  <title>Bonwenvrs' Archive</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./style.css">
+  <script src="./script.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <a class="wordmark" href="./" aria-label="Bonwenvrs' Archive home">Bonwenvrs'<span> Archive</span></a>
+    <span class="header-note">A collection of other worlds.</span>
+  </header>
+
+  <main class="page-shell">
+    <section class="intro">
+      <p class="eyebrow">THE STORY COLLECTION</p>
+      <h1>Somewhere between<br>fiction and feeling.</h1>
+      <p class="intro-copy">A little home for the alternate universes, characters, and stories I've written.</p>
+    </section>
+
+    <section class="collection" aria-labelledby="collection-heading">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">THE ARCHIVE</p>
+          <h2 id="collection-heading">All stories <span id="story-count" class="count"></span></h2>
+        </div>
+        <label class="search-wrap">
+          <span class="sr-only">Search stories</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m16 16 4 4"></path></svg>
+          <input id="search" type="search" placeholder="Find a story..." autocomplete="off">
+        </label>
+      </div>
+
+      <div id="story-list" class="story-grid" aria-live="polite">
+        <p class="status-message">Opening the archive…</p>
+      </div>
+      <p id="empty-state" class="status-message hidden">No stories match that search.</p>
+    </section>
+
+    <section id="reader" class="reader hidden" aria-labelledby="reader-title">
+      <div class="reader-heading">
+        <div>
+          <p class="eyebrow">NOW READING</p>
+          <h2 id="reader-title"></h2>
+        </div>
+        <button id="close-reader" class="text-button" type="button">Close <span aria-hidden="true">×</span></button>
+      </div>
+      <div id="pdf-list" class="pdf-list"></div>
+      <div id="pdf-viewer-wrap" class="pdf-viewer-wrap hidden">
+        <div class="viewer-toolbar">
+          <span id="viewer-filename"></span>
+          <a id="open-pdf" class="small-link" target="_blank" rel="noopener">Open in new tab ↗</a>
+        </div>
+        <iframe id="pdf-viewer" title="PDF story reader"></iframe>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <span>Bonwenvrs' Archive</span>
+    <span>Made of words, kept in one place.</span>
+  </footer>
+</body>
+</html>
